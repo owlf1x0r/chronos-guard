@@ -9,17 +9,14 @@ import { ProgressBars } from '@/components/features/timer/ProgressBars';
 import { SessionHistory } from '@/components/features/timer/SessionHistory';
 import { TaskDialog } from '@/components/features/timer/TaskDialog';
 import { useToast } from '@/hooks/use-toast';
-import { SessionRecord, SessionType, UpdateSessionRecordParam } from '@/types';
+import { SessionRecord, SessionType, UpdateSessionRecordParam, Task } from '@/types';
 import { clearTimeInterval } from '@/utils/timer';
-
-interface Task {
-  id: string;
-  name: string;
-}
 
 const focusMinutes = 25;
 const breakMinutes = 5;
 const longBreakMinutes = 15;
+
+const initialTask: Task = { id: 0, name: 'Not selected' };
 
 interface PomodoroTimerProps {
   sessionRecords: SessionRecord[];
@@ -32,8 +29,8 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<SessionType>('focus');
   const [focusCount, setFocusCount] = useState(0);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([initialTask]);
+  const [currentTask, setCurrentTask] = useState<Task | null>(initialTask);
   const { toast } = useToast();
 
   const today = new Date().toISOString().split('T')[0];
@@ -109,32 +106,16 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
   };
 
   const handleCreateTask = (taskName: string) => {
+    const lastTaskId = tasks.length > 0 ? tasks[tasks.length - 1].id : 0;
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: lastTaskId + 1,
       name: taskName,
     };
     setTasks([...tasks, newTask]);
   };
 
   const handleSelectTask = (task: Task) => {
-    if (isActive) {
-      toast({
-        title: 'Cannot change task',
-        description: 'Please stop the timer before changing the task.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (currentTask) {
-      toast({
-        title: 'Timer Reset',
-        description: 'The timer has been reset due to task change.',
-      });
-    }
-
     setCurrentTask(task);
-    resetTimer();
   };
 
   const totalMinutes = mode === 'focus' ? focusMinutes : mode === 'longBreak' ? longBreakMinutes : breakMinutes;
@@ -155,7 +136,6 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
             currentTask={currentTask}
             onCreateTask={handleCreateTask}
             onSelectTask={handleSelectTask}
-            isTimerActive={isActive}
           />
         </div>
         <div className="text-6xl font-bold tabular-nums flex">
@@ -191,7 +171,7 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
         </div>
         <SessionHistory todaySessionRecord={todaySession} totalSessionRecords={sessionRecords} />
         <div className="flex space-x-4">
-          <Button onClick={toggleTimer} variant="outline" size="icon">
+          <Button onClick={toggleTimer} variant="default" size="icon">
             {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
           <Button onClick={resetTimer} variant="outline" size="icon">

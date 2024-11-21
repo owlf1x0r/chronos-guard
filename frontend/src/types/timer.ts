@@ -11,3 +11,8 @@ export interface UpdateSessionRecordParam {
   date: string;
   sessionType: SessionType;
 }
+
+export interface Task {
+  id: number;
+  name: string;
+}
