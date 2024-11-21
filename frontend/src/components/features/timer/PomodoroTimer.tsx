@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Play, Pause, RotateCcw } from 'lucide-react';
@@ -9,9 +9,8 @@ import { ProgressBars } from '@/components/features/timer/ProgressBars';
 import { SessionHistory } from '@/components/features/timer/SessionHistory';
 import { TaskDialog } from '@/components/features/timer/TaskDialog';
 import { useToast } from '@/hooks/use-toast';
-import { SessionRecord } from '@/types';
-
-type SessionType = 'focus' | 'break' | 'longBreak';
+import { SessionRecord, SessionType, UpdateSessionRecordParam } from '@/types';
+import { clearTimeInterval } from '@/utils/timer';
 
 interface Task {
   id: string;
@@ -22,24 +21,36 @@ const focusMinutes = 25;
 const breakMinutes = 5;
 const longBreakMinutes = 15;
 
-export default function PomodoroTimer() {
+interface PomodoroTimerProps {
+  sessionRecords: SessionRecord[];
+  updateSessionRecord: ({ date, sessionType }: UpdateSessionRecordParam) => void;
+}
+
+export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: PomodoroTimerProps) {
   const [minutes, setMinutes] = useState(focusMinutes);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<SessionType>('focus');
-  const [todaySessions, setTodaySessions] = useState<SessionRecord>({
-    date: new Date().toISOString().split('T')[0],
-    focus: 0,
-    break: 0,
-    longBreak: 0,
-  });
-  const [totalSessions, setTotalSessions] = useState<SessionRecord[]>([
-    { date: '2024-11-01', focus: 5, break: 2, longBreak: 0 },
-  ]);
   const [focusCount, setFocusCount] = useState(0);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const { toast } = useToast();
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const todaySession = sessionRecords.find((record) => record.date === today) ?? {
+    date: today,
+    focus: 0,
+    break: 0,
+    longBreak: 0,
+  };
+
+  const updateSessions = useCallback(
+    (sessionType: SessionType) => {
+      updateSessionRecord({ date: today, sessionType });
+    },
+    [today, updateSessionRecord]
+  );
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -79,21 +90,7 @@ export default function PomodoroTimer() {
     }
 
     return () => clearTimeInterval(interval);
-  }, [isActive, minutes, seconds, mode, focusCount]);
-
-  const updateSessions = (session: SessionType) => {
-    const today = new Date().toISOString().split('T')[0];
-    setTodaySessions((prev) => ({ ...prev, date: today, [session]: prev[session] + 1 }));
-    setTotalSessions((prev) => {
-      const todayIndex = prev.findIndex((record) => record.date === today);
-      if (todayIndex !== -1) {
-        const updatedRecord = { ...prev[todayIndex], [session]: prev[todayIndex][session] + 1 };
-        return [...prev.slice(0, todayIndex), updatedRecord, ...prev.slice(todayIndex + 1)];
-      } else {
-        return [...prev, { date: today, focus: 0, break: 0, longBreak: 0, [session]: 1 }];
-      }
-    });
-  };
+  }, [isActive, minutes, seconds, mode, focusCount, updateSessions]);
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -192,7 +189,7 @@ export default function PomodoroTimer() {
           <ProgressBars totalBars={totalMinutes} activeBars={activeMinutes} color="bg-primary" />
           <ProgressBars totalBars={59} activeBars={activeSeconds} color="bg-stone-900" />
         </div>
-        <SessionHistory todaySessionRecord={todaySessions} totalSessionRecords={totalSessions} />
+        <SessionHistory todaySessionRecord={todaySession} totalSessionRecords={sessionRecords} />
         <div className="flex space-x-4">
           <Button onClick={toggleTimer} variant="outline" size="icon">
             {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -204,10 +201,4 @@ export default function PomodoroTimer() {
       </CardContent>
     </Card>
   );
-}
-
-function clearTimeInterval(interval: NodeJS.Timeout | null) {
-  if (interval) {
-    clearInterval(interval);
-  }
 }

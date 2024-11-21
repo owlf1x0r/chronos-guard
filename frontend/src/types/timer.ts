@@ -4,3 +4,10 @@ export interface SessionRecord {
   break: number;
   longBreak: number;
 }
+
+export type SessionType = 'focus' | 'break' | 'longBreak';
+
+export interface UpdateSessionRecordParam {
+  date: string;
+  sessionType: SessionType;
+}
