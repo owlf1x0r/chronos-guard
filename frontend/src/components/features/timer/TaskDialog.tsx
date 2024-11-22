@@ -71,7 +71,7 @@ export function TaskDialog({ tasks, currentTask, onCreateTask, onSelectTask }: T
                 {tasks.map((task) => (
                   <Button
                     key={task.id}
-                    variant="outline"
+                    variant={currentTask?.id === task.id ? 'default' : 'outline'}
                     className="w-full justify-start"
                     onClick={() => handleSelectTask(task)}
                   >
