@@ -3,13 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProgressBars } from '@/components/features/timer/ProgressBars';
 import { SessionHistory } from '@/components/features/timer/SessionHistory';
 import { TaskDialog } from '@/components/features/timer/TaskDialog';
 import { SessionRecord, SessionType, UpdateSessionRecordParam, Task } from '@/types';
 import { clearTimeInterval } from '@/utils/timer';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const focusMinutes = 25;
 const breakMinutes = 5;
@@ -30,6 +32,7 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
   const [focusCount, setFocusCount] = useState(0);
   const [tasks, setTasks] = useState<Task[]>([initialTask]);
   const [currentTask, setCurrentTask] = useState<Task | null>(initialTask);
+  const [isAuto, setIsAuto] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -60,7 +63,7 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
         } else {
           clearTimeInterval(interval);
           updateSessions(mode);
-          setIsActive(false);
+          setIsActive(isAuto);
           if (mode === 'focus') {
             setFocusCount((prevCount) => prevCount + 1);
             if (focusCount === 3) {
@@ -71,9 +74,6 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
               setMode('break');
               setMinutes(breakMinutes);
             }
-          } else if (mode === 'break') {
-            setMode('focus');
-            setMinutes(focusMinutes);
           } else {
             setMode('focus');
             setMinutes(focusMinutes);
@@ -85,7 +85,7 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
     }
 
     return () => clearTimeInterval(interval);
-  }, [isActive, minutes, seconds, mode, focusCount, updateSessions]);
+  }, [isActive, minutes, seconds, mode, focusCount, updateSessions, isAuto]);
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -100,6 +100,18 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
       setMinutes(breakMinutes);
     } else {
       setMinutes(longBreakMinutes);
+    }
+  };
+
+  const skipTimer = () => {
+    setIsActive(false);
+    setSeconds(0);
+    if (mode === 'focus') {
+      setMode('break');
+      setMinutes(breakMinutes);
+    } else {
+      setMode('focus');
+      setMinutes(focusMinutes);
     }
   };
 
@@ -119,6 +131,10 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
   const totalMinutes = mode === 'focus' ? focusMinutes : mode === 'longBreak' ? longBreakMinutes : breakMinutes;
   const activeMinutes = totalMinutes - minutes - 1;
   const activeSeconds = seconds === 0 ? 0 : 60 - seconds;
+
+  const toggleAuto = () => {
+    setIsAuto(!isAuto);
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg">
@@ -168,12 +184,19 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
           <ProgressBars totalBars={59} activeBars={activeSeconds} color="bg-stone-900" />
         </div>
         <SessionHistory todaySessionRecord={todaySession} totalSessionRecords={sessionRecords} />
-        <div className="flex space-x-4">
-          <Button onClick={toggleTimer} variant="default" size="icon">
-            {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          </Button>
+        <div className="flex items-center space-x-4">
           <Button onClick={resetTimer} variant="outline" size="icon">
             <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Button onClick={skipTimer} variant="outline" size="icon">
+            <SkipForward className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Switch id="auto" checked={isAuto} onCheckedChange={toggleAuto} />
+            <Label htmlFor="auto">Auto</Label>
+          </div>
+          <Button onClick={toggleTimer} variant="default" size="lg">
+            {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
         </div>
       </CardContent>
