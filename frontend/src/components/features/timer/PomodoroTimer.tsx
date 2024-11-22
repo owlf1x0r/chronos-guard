@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ProgressBars } from '@/components/features/timer/ProgressBars';
 import { SessionHistory } from '@/components/features/timer/SessionHistory';
 import { TaskDialog } from '@/components/features/timer/TaskDialog';
-import { useToast } from '@/hooks/use-toast';
 import { SessionRecord, SessionType, UpdateSessionRecordParam, Task } from '@/types';
 import { clearTimeInterval } from '@/utils/timer';
 
@@ -31,7 +30,6 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
   const [focusCount, setFocusCount] = useState(0);
   const [tasks, setTasks] = useState<Task[]>([initialTask]);
   const [currentTask, setCurrentTask] = useState<Task | null>(initialTask);
-  const { toast } = useToast();
 
   const today = new Date().toISOString().split('T')[0];
 
