@@ -8,10 +8,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ProgressBars } from '@/components/features/timer/ProgressBars';
 import { SessionHistory } from '@/components/features/timer/SessionHistory';
 import { TaskDialog } from '@/components/features/timer/TaskDialog';
-import { SessionRecord, SessionType, UpdateSessionRecordParam, Task } from '@/types';
+import { SessionRecord, SessionType, UpdateSessionRecordParam, Task, SoundType } from '@/types';
 import { clearTimeInterval } from '@/utils/timer';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useSound } from '@/hooks/useSound';
+import { SoundControls } from './SoundControls';
 
 const focusMinutes = 25;
 const breakMinutes = 5;
@@ -43,6 +45,9 @@ export default function PomodoroTimer({
   const [focusCount, setFocusCount] = useState(0);
   const [isAuto, setIsAuto] = useState(false);
 
+  const tickSound = useSound('/sounds/tick.wav');
+  const completeSound = useSound('/sounds/complete.wav');
+
   const today = new Date().toISOString().split('T')[0];
 
   const todaySession = sessionRecords.find((record) => record.date === today) ?? {
@@ -60,16 +65,24 @@ export default function PomodoroTimer({
   );
 
   useEffect(() => {
+    if (!isActive) {
+      tickSound.pause();
+    }
+  }, [isActive, tickSound]);
+
+  useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
     if (isActive) {
       interval = setInterval(() => {
         if (seconds > 0) {
           setSeconds(seconds - 1);
+          tickSound.play();
         } else if (minutes > 0) {
           setMinutes(minutes - 1);
           setSeconds(59);
         } else {
+          completeSound.play();
           clearTimeInterval(interval);
           updateSessions(mode);
           setIsActive(isAuto);
@@ -94,7 +107,7 @@ export default function PomodoroTimer({
     }
 
     return () => clearTimeInterval(interval);
-  }, [isActive, minutes, seconds, mode, focusCount, updateSessions, isAuto]);
+  }, [isActive, minutes, seconds, mode, focusCount, updateSessions, isAuto, tickSound, completeSound]);
 
   const toggleTimer = () => {
     setIsActive(!isActive);
@@ -136,6 +149,22 @@ export default function PomodoroTimer({
     setIsAuto(!isAuto);
   };
 
+  const handleVolumeChange = (type: SoundType, volume: number) => {
+    if (type === 'tick') {
+      tickSound.handleVolume(volume);
+    } else {
+      completeSound.handleVolume(volume);
+    }
+  };
+
+  const handleMuteChange = (type: SoundType, muted: boolean) => {
+    if (type === 'tick') {
+      tickSound.handleMute(muted);
+    } else {
+      completeSound.handleMute(muted);
+    }
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg">
       <CardHeader>
@@ -152,6 +181,7 @@ export default function PomodoroTimer({
             onSelectTask={handleSelectTask}
             onDeleteTask={onDeleteTask}
           />
+          <SoundControls onVolumeChange={handleVolumeChange} onMuteChange={handleMuteChange} />
         </div>
         <div className="text-6xl font-bold tabular-nums flex">
           <AnimatePresence mode="popLayout">
