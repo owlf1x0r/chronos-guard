@@ -17,21 +17,30 @@ const focusMinutes = 25;
 const breakMinutes = 5;
 const longBreakMinutes = 15;
 
-const initialTask: Task = { id: 0, name: 'Not selected' };
-
 interface PomodoroTimerProps {
   sessionRecords: SessionRecord[];
   updateSessionRecord: ({ date, sessionType }: UpdateSessionRecordParam) => void;
+  tasks: Task[];
+  onCreateTask: (taskName: string) => void;
+  onDeleteTask: (taskId: number) => void;
+  currentTask: Task;
+  onSelectTask: (task: Task) => void;
 }
 
-export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: PomodoroTimerProps) {
+export default function PomodoroTimer({
+  sessionRecords,
+  updateSessionRecord,
+  tasks,
+  onCreateTask,
+  onDeleteTask,
+  currentTask,
+  onSelectTask,
+}: PomodoroTimerProps) {
   const [minutes, setMinutes] = useState(focusMinutes);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<SessionType>('focus');
   const [focusCount, setFocusCount] = useState(0);
-  const [tasks, setTasks] = useState<Task[]>([initialTask]);
-  const [currentTask, setCurrentTask] = useState<Task | null>(initialTask);
   const [isAuto, setIsAuto] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
@@ -115,17 +124,8 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
     }
   };
 
-  const handleCreateTask = (taskName: string) => {
-    const lastTaskId = tasks.length > 0 ? tasks[tasks.length - 1].id : 0;
-    const newTask: Task = {
-      id: lastTaskId + 1,
-      name: taskName,
-    };
-    setTasks([...tasks, newTask]);
-  };
-
   const handleSelectTask = (task: Task) => {
-    setCurrentTask(task);
+    onSelectTask(task);
   };
 
   const totalMinutes = mode === 'focus' ? focusMinutes : mode === 'longBreak' ? longBreakMinutes : breakMinutes;
@@ -148,8 +148,9 @@ export default function PomodoroTimer({ sessionRecords, updateSessionRecord }: P
           <TaskDialog
             tasks={tasks}
             currentTask={currentTask}
-            onCreateTask={handleCreateTask}
+            onCreateTask={onCreateTask}
             onSelectTask={handleSelectTask}
+            onDeleteTask={onDeleteTask}
           />
         </div>
         <div className="text-6xl font-bold tabular-nums flex">

@@ -15,15 +15,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Task } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Trash2 } from 'lucide-react';
 
 interface TaskDialogProps {
   tasks: Task[];
   currentTask: Task | null;
   onCreateTask: (taskName: string) => void;
   onSelectTask: (task: Task) => void;
+  onDeleteTask: (taskId: number) => void;
 }
 
-export function TaskDialog({ tasks, currentTask, onCreateTask, onSelectTask }: TaskDialogProps) {
+export function TaskDialog({ tasks, currentTask, onCreateTask, onSelectTask, onDeleteTask }: TaskDialogProps) {
   const [newTaskName, setNewTaskName] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -69,14 +71,23 @@ export function TaskDialog({ tasks, currentTask, onCreateTask, onSelectTask }: T
             <div className="mt-2 space-y-2">
               <ScrollArea className="h-[140px] rounded-md border">
                 {tasks.map((task) => (
-                  <Button
-                    key={task.id}
-                    variant={currentTask?.id === task.id ? 'default' : 'outline'}
-                    className="w-full justify-start"
-                    onClick={() => handleSelectTask(task)}
-                  >
-                    {task.name}
-                  </Button>
+                  <div key={task.id} className="flex items-center justify-between">
+                    <Button
+                      variant={currentTask?.id === task.id ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => handleSelectTask(task)}
+                    >
+                      {task.name}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => onDeleteTask(task.id)}
+                      disabled={task.id === 0 || currentTask?.id === task.id}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 ))}
               </ScrollArea>
             </div>
